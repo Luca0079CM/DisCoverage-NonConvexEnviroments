@@ -30,8 +30,10 @@ class Robot(pg.sprite.Sprite):
         self.radius = 50
 
     def update(self):
+        mx, my = pg.mouse.get_pos()
+        self.delta = math.atan2(self.x - mx, self.y - my)
         self.x += v * math.cos(self.delta)
-        self.y += v * math.sin(self.delta)
+        self.y += v * - math.sin(self.delta)
         self.rect.x, self.rect.y = self.x, self.y
 
 
@@ -55,6 +57,21 @@ def map_create():
                 r.is_obstacle = True
             pg.draw.rect(surface, r.color, r.rect)
             map.append(r)
+
+    #Ostacolo 1
+    i = GRIDSIZE * 20
+    for j in range(400, window.get_height(), GRIDSIZE):
+        for m in map:
+            if m.rect.x == i and m.rect.y == j:
+                m.is_obstacle = True
+
+    #Ostacolo 2
+    j = GRIDSIZE * 10
+    for i in range(400, window.get_width(), GRIDSIZE):
+        for m in map:
+            if m.rect.x == i and m.rect.y == j:
+                m.is_obstacle = True
+
     return surface, map
 
 
