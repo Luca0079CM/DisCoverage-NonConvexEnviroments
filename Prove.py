@@ -27,6 +27,7 @@ class Robot(pg.sprite.Sprite):
         self.vy = 0.25
 
     def update(self):
+        self.rect = self.image.get_rect(center=(self.x, self.y))
         self.delta = math.atan2(self.y, self.x)
         self.x += self.vx * math.cos(self.delta)
         self.y += self.vy * - math.sin(self.delta)
@@ -66,37 +67,17 @@ def rotate(image, sprite, angle):
 
 
 def main():
-    pg.display.set_caption("DisCoverage Exploration")
-    icon = pg.image.load("robot1.png")
-    pg.display.set_icon(icon)
     is_running = True
-    surface, walls, map = map_create()
-
-    # Robots
-    robot = Robot(100, window.get_height() - 100)
-    i = 0
+    robot = Robot(400, 400)
     while is_running:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 is_running = False
-        for m in map:
-            if not m.found:
-                if m.colliderect(robot.rect):
-                    m.color = WHITE
-                    m.found = True
-                    pg.draw.rect(surface, m.color, m)
-        for w in walls:
-            if w.colliderect(robot.rect):
-                pg.draw.rect(surface, BLACK, w)
-                if i % 2 == 0:
-                    robot.vx = - robot.vx
-                else:
-                    robot.vy = - robot.vy
-                i += 1
-        robot.image, robot.rect = rotate(robot_image, robot, robot.delta)
-        window.blit(surface, (0, 0))
+        robot.x += 0.01
+        robot.y += 0.01
+        robot.rect = robot.image.get_rect(center=(robot.x, robot.y))
         window.blit(robot.image, robot.rect)
-        robot.update()
+        pg.draw.rect(window, WHITE, robot.rect, 1)
         pg.display.update()
 
 
