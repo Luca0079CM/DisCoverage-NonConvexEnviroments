@@ -8,6 +8,7 @@ GRIDSIZE = 20
 BLACK = (0, 0, 0)
 LIGHTBLACK = (32, 32, 32)
 WHITE = (255, 255, 255)
+DARKWHITE = (224, 224, 224)
 GREY = (160, 160, 160)
 LIGHTGREY = (190, 190, 190)
 GREEN = (0, 153, 76)
@@ -19,9 +20,10 @@ pg.display.init()
 window = pg.display.set_mode((800, 600))
 robot_image = pg.image.load("robot1.png")
 # Speed
-v = 0.7
+v = 0.1
 # Delta
 pi = math.pi
+converter = 180/pi
 standard_delta = [0, pi/4, pi/2, pi*3/4, pi, pi*5/4, pi*3/2, pi*7/4]
 
 
@@ -33,10 +35,11 @@ class Robot(pg.sprite.Sprite):
         self.y = y
         self.radius = 35
         self.rect = self.image.get_rect(center=(x, y))
-        self.delta = standard_delta[1]
+        self.delta = standard_delta[7]
         self.reachable_matrix = np.zeros([int(window.get_width() / GRIDSIZE), int(window.get_height() / GRIDSIZE)])
 
     def update(self, matrix):
+
         dx = -math.cos(self.delta - (math.pi / 2)) * v
         dy = math.sin(self.delta - (math.pi / 2)) * v
         self.x += dx
@@ -86,7 +89,7 @@ def map_create():
 
 
 def rotate(image, x, y, angle):
-    angle = angle * (180 / pi)
+    angle = angle * converter
     rotated_image = pg.transform.rotozoom(image, angle, 1)
     rotated_rect = rotated_image.get_rect(center=(x, y))
     return rotated_image, rotated_rect
@@ -103,9 +106,17 @@ def main():
     # Robots
     robot = Robot(110, window.get_height() - 110)
 
+    # Set Matrix
     for m in map:
-        if math.dist(robot.rect.center, m.rect.center) < 1:
-            robot.reachable_matrix[int(m.rect.x / GRIDSIZE)][int(m.rect.y / GRIDSIZE)] = 1
+        if m.color == BLACK:
+            matrix[int(m.rect.x / GRIDSIZE)][int(m.rect.y / GRIDSIZE)] = 1
+        if math.dist(robot.rect.center, m.rect.center) < 45:
+            angle = robot.delta + math.atan2(m.rect.center[1] - robot.rect.center[1],
+                                             m.rect.center[0] - robot.rect.center[0])
+            if round(math.sin(angle), 2) <= 0:
+                robot.reachable_matrix[int(m.rect.x / GRIDSIZE)][int(m.rect.y / GRIDSIZE)] = 1
+
+    # Main Loop
     while is_running:
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -129,9 +140,18 @@ def main():
                 seed()
                 rand = randint(0, len(standard_delta) - 1)
                 robot.delta = standard_delta[rand]
-                print(standard_delta[rand]*(180/pi), robot.delta*(180/pi))
+            if m.color is not BLACK and math.dist(robot.rect.center, m.rect.center) < 45:
+                angle = robot.delta + math.atan2(m.rect.center[1] - robot.rect.center[1],
+                                                 m.rect.center[0] - robot.rect.center[0])
+                if round(math.sin(angle), 2) <= 0:
+                    robot.reachable_matrix[int(m.rect.x / GRIDSIZE)][int(m.rect.y / GRIDSIZE)] = 1
 
+        for i in range(0, int(window.get_width() / GRIDSIZE)):
+            for j in range(0, int(window.get_height() / GRIDSIZE)):
+                if robot.reachable_matrix[i][j] == 1:
+                    pg.draw.circle(surface, RED, ((i*GRIDSIZE)+GRIDSIZE/2, (j*GRIDSIZE)+GRIDSIZE/2), 2)
         robot.update(matrix)
+        # Draw
         x, y = robot.rect.center
         robot.image, robot.rect = rotate(robot_image, x, y, robot.delta)
         window.blit(surface, (0, 0))
