@@ -53,6 +53,7 @@ class Graph:
 
 if __name__ == '__main__':
     g = Graph()
+
     vertex = {}
     for i in range(2, 8):
         tmp = str(i)
