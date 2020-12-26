@@ -1,8 +1,10 @@
 import pygame as pg
 import math
-import numpy as np
 from random import *
+import Map
+import Dijkstra
 import time
+
 # Colors
 BLACK = (0, 0, 0)
 LIGHTBLACK = (32, 32, 32)
@@ -18,15 +20,15 @@ BLUE = (0, 128, 255)
 pg.display.init()
 window = pg.display.set_mode((800, 600))
 robot_image = pg.image.load("robot1.png")
-GRIDSIZE = 10
+GRIDSIZE = Map.GRIDSIZE
 ROWS = int(window.get_width() / GRIDSIZE)
 COLUMNS = int(window.get_height() / GRIDSIZE)
 # Speed
-v = 0.1
+v = 1
 # Delta
 pi = math.pi
-converter = 180/pi
-standard_delta = [0, pi/4, pi/2, pi*3/4, pi, pi*5/4, pi*3/2, pi*7/4]
+converter = 180 / pi
+standard_delta = [0, pi / 4, pi / 2, pi * 3 / 4, pi, pi * 5 / 4, pi * 3 / 2, pi * 7 / 4]
 
 
 class Robot(pg.sprite.Sprite):
@@ -35,126 +37,150 @@ class Robot(pg.sprite.Sprite):
         self.image = robot_image
         self.x = x
         self.y = y
-        self.radius = 35
+        self.radius = 25
         self.rect = self.image.get_rect(center=(x, y))
         self.delta = standard_delta[0]
+        self.white_tiles = []
         self.frontier = []
         self.is_moving = False
         self.target = None
+        self.current_target = None
+        self.path = []
 
     def update(self, surface, map):
         if not self.is_moving:
-            self.calculate_frontier(surface, map)
-            trg = self.calculate_target()
+            start = self.calculate_start_and_frontier(surface, map)
+            self.target = self.calculate_target()
+            pg.draw.rect(surface, BLUE, self.target.rect)
+            self.path = self.calculate_path(start)
+            print(self.path)
+            trg = self.path.pop(0)
             for m in map:
-                if m.id == trg:
-                    self.target = m
-                    pg.draw.rect(surface, BLUE, m.rect)
+                if m.id[0] == trg[0] and m.id[1] == trg[1]:
+                    self.current_target = m
                     break
-            self.calculate_direction()
             self.is_moving = True
 
-        x, y = self.rect.center
-        self.image, self.rect = rotate(robot_image, x, y, self.delta)
-        dx = math.cos(self.delta - (math.pi / 2)) * v
-        dy = math.sin(self.delta - (math.pi / 2)) * v
-        self.x += dx
-        self.y += dy
-        self.rect = self.image.get_rect(center=(self.x, self.y))
-        if self.rect.colliderect(self.target.rect):
+        if self.rect.center == self.target.rect.center:
             self.is_moving = False
+            self.current_target = None
             for f in self.frontier:
                 pg.draw.rect(surface, WHITE, f.rect)
             self.frontier.clear()
+            self.path.clear()
 
-    def calculate_frontier(self, surface, map):
-        front_tiles = []
+        if self.current_target is not None:
+            self.delta = math.atan2(self.current_target.rect.center[1] - self.rect.center[1],
+                                    self.current_target.rect.center[0] - self.rect.center[0])
+            x, y = self.rect.center
+            self.image, self.rect = rotate(robot_image, x, y, self.delta)
+            dx = math.cos(self.delta) * v
+            dy = math.sin(self.delta) * v
+            self.x += dx
+            self.y += dy
+            self.rect = self.image.get_rect(center=(self.x, self.y))
+            pg.draw.line(surface, BLACK, (x, y), self.rect.center, 2)
+            if self.rect.center[0] == self.current_target.rect.center[0] and \
+                    self.rect.center[1] == self.current_target.rect.center[1] and \
+                    self.current_target.id != self.target.id:
+                trg = self.path.pop(0)
+                for m in map:
+                    if m.id[0] == trg[0] and m.id[1] == trg[1]:
+                        self.current_target = m
+                        break
+
+    def calculate_start_and_frontier(self, surface, map):
+        start = None
+        min_dist = 10000
+
         for m in map:
-            if m.color == WHITE:
-                angle = self.delta + math.atan2(m.rect.center[1] - self.rect.center[1],
-                                                m.rect.center[0] - self.rect.center[0])
-                if round(math.sin(angle), 2) <= 0:
-                    front_tiles.append(m)
-        for t in front_tiles:
+            if self.rect.colliderect(m.rect):
+                if math.dist(self.rect.center, m.rect.center) < min_dist:
+                    start = m
+                    min_dist = math.dist(self.rect.center, m.rect.center)
+
+        frontier = []
+        for t in self.white_tiles:
             for m in map:
-                for i in range(0, len(t.neighbour)):
-                    if m.found == 0 and m.id[0] == t.neighbour[i][0] and m.id[1] == t.neighbour[i][1]:
-                        self.frontier.append(t)
-        for f in self.frontier:
-            f.color = RED
-            pg.draw.rect(surface, f.color, f.rect)
+                found = False
+                for i in range(0, len(t.neighbour_ids)):
+                    if m.id[0] == t.neighbour_ids[i][0] and m.id[1] == t.neighbour_ids[i][1]:
+                        if m.is_obstacle:
+                            print("YEE")
+                            found = False
+                            break
+                        elif m.found == 0:
+                            found = True
+                    if found:
+                        frontier.append(t)
+                        break
+
+        for f in frontier:
+            if f not in self.frontier:
+                self.frontier.append(f)
+                f.color = RED
+                pg.draw.rect(surface, f.color, f.rect)
+        return start
 
     def calculate_target(self):
-        minimum = (-1, -1)
+        minimum = None
         min_dist = 0
         for f in self.frontier:
             if math.dist(self.rect.center, f.rect.center) < min_dist or min_dist == 0:
                 min_dist = math.dist(self.rect.center, f.rect.center)
-                minimum = f.id
+                minimum = f
         return minimum
 
-    def calculate_direction(self):
-        x, y = self.target.rect.center
-        self.delta = math.atan2((y - self.rect.center[1]), (x - self.rect.center[0]))
-        print(self.delta * converter)
+    def calculate_path(self, start):
+        g = Dijkstra.Graph()
+        nodes = {}
+        i = 0
+        for t in self.white_tiles:
+            nodes[i] = t.id
+            i += 1
+        """
+        print(nodes)
+        for n in self.front_tiles:
+            print(n.id)
+            for i in range(1, len(n.neighbour_ids) + 1):
+                print(" ", n.neighbour_ids[i - 1], "=>", n.neighbour_distances[i])
+        """
+        for n in self.white_tiles:
+            l = -1
+            vertex = {}
+            for k in range(0, len(nodes)):
+                if nodes[k] == n.id:
+                    l = k
+                    break
+            for i in range(1, len(n.neighbour_ids) + 1):
+                for j in range(0, len(nodes)):
+                    if n.neighbour_ids[i - 1][0] == nodes[j][0] and n.neighbour_ids[i - 1][1] == nodes[j][1]:
+                        tmp = str(j)
+                        vertex[tmp] = n.neighbour_distances[i]
+                        break
+            l = str(l)
+            g.add_vertex(l, vertex)
 
+        s, t = 0, 0
+        for i in range(0, len(nodes)):
+            if nodes[i] == start.id:
+                s = str(i)
+            if nodes[i] == self.target.id:
+                t = str(i)
 
-class MapRect(pg.sprite.Sprite):
-    def __init__(self, x, y, color):
-        super().__init__()
-        self.rect = pg.Rect((x, y), (GRIDSIZE, GRIDSIZE))
-        self.color = color
-        self.found = 0
-        self.is_obstacle = False
-        self.id = [int(x/GRIDSIZE), int(y/GRIDSIZE)]
-        self.neighbour = []
-
-
-def map_create():
-    surface = pg.Surface([window.get_width(), window.get_height()])
-    map = []
-    for i in range(0, window.get_width(), GRIDSIZE):
-        for j in range(0, window.get_height(), GRIDSIZE):
-            if ((i + j)/GRIDSIZE) % 2 == 0:
-                r = MapRect(i, j, GREY)
-            else:
-                r = MapRect(i, j, LIGHTGREY)
-            if i == 0 or i == window.get_width() - GRIDSIZE or j == 0 or j == window.get_height() - GRIDSIZE:
-                r.is_obstacle = True
-            pg.draw.rect(surface, r.color, r.rect)
-            map.append(r)
-
-    # Neighbour
-    for m in map:
-        m.neighbour.append((m.id[0] - 1, m.id[1] - 1))
-        m.neighbour.append((m.id[0] - 1, m.id[1]))
-        m.neighbour.append((m.id[0] - 1, m.id[1] + 1))
-
-        m.neighbour.append((m.id[0], m.id[1] - 1))
-        m.neighbour.append((m.id[0], m.id[1] + 1))
-
-        m.neighbour.append((m.id[0] + 1, m.id[1] - 1))
-        m.neighbour.append((m.id[0] + 1, m.id[1]))
-        m.neighbour.append((m.id[0] + 1, m.id[1] + 1))
-
-    # Ostacolo 1
-    i = GRIDSIZE * 20
-    for j in range(400, window.get_height(), GRIDSIZE):
-        for m in map:
-            if m.rect.x == i and m.rect.y == j:
-                m.is_obstacle = True
-
-    # Ostacolo 2
-    j = GRIDSIZE * 10
-    for i in range(400, window.get_width(), GRIDSIZE):
-        for m in map:
-            if m.rect.x == i and m.rect.y == j:
-                m.is_obstacle = True
-    return surface, map
+        tmp_path = g.shortest_path(s, t)
+        path = []
+        for v in tmp_path:
+            path.append(nodes.get(int(v)))
+        return path
 
 
 def rotate(image, x, y, angle):
     angle = angle * converter
+    if angle == 0 or angle == 180:
+        angle -= 90
+    elif angle == 90 or angle == -90:
+        angle += 90
     rotated_image = pg.transform.rotozoom(image, angle, 1)
     rotated_rect = rotated_image.get_rect(center=(x, y))
     return rotated_image, rotated_rect
@@ -165,7 +191,7 @@ def main():
     icon = pg.image.load("robot1.png")
     pg.display.set_icon(icon)
     is_running = True
-    surface, map = map_create()
+    surface, map = Map.map_create(window)
 
     # Robots
     robot = Robot(110, window.get_height() - 110)
@@ -180,25 +206,20 @@ def main():
                 rand = randint(0, len(standard_delta) - 1)
                 robot.delta = standard_delta[rand]
 
-        front_tiles = []
         for m in map:
             if not m.found:
                 if pg.sprite.collide_circle(robot, m):
                     if m.is_obstacle:
                         m.color = BLACK
-                    else:
+                    elif m.neighbour_ids:
                         m.color = WHITE
+                        robot.white_tiles.append(m)
                     m.found = 1
                 pg.draw.rect(surface, m.color, m.rect)
             if robot.rect.colliderect(m) and m.color == BLACK:
                 seed()
                 rand = randint(0, len(standard_delta) - 1)
                 robot.delta = standard_delta[rand]
-            if m.color == WHITE:
-                angle = robot.delta + math.atan2(m.rect.center[1] - robot.rect.center[1],
-                                                 m.rect.center[0] - robot.rect.center[0])
-                if round(math.sin(angle), 2) <= 0:
-                    front_tiles.append(m)
 
         robot.update(surface, map)
         # Draw
