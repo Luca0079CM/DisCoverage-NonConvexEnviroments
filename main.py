@@ -41,8 +41,10 @@ def main():
     # Robots
     robots = [Robot.Robot(1, 1 * 110, window.get_height() - 110),
               Robot.Robot(2, 300, window.get_height() - 310),
-              Robot.Robot(3, 600, window.get_height() - 190)]
-
+              Robot.Robot(3, 600, window.get_height() - 190)
+              # Robot.Robot(3, window.get_width() - 40, window.get_height() - 150)
+              ]
+    start = time.time()
     # Main Loop
     while is_running:
         for event in pg.event.get():
@@ -77,7 +79,11 @@ def main():
         for robot in robots:
             window.blit(robot.image, robot.rect)
         pg.display.update()
+    stop = time.time()
+    t = stop - start
     print("SUCCESS EXPLORATION")
+    print("\nNumero di Robot:", len(robots))
+    print("Tempo impiegato:", math.trunc(t/60), " minuti", round(t - math.trunc(t/60) * 60), " secondi")
 
 
 if __name__ == '__main__':

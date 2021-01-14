@@ -69,7 +69,12 @@ class Robot(pg.sprite.Sprite):
                 self.delta = math.atan2(self.current_target.rect.center[1] - self.rect.center[1],
                                         self.current_target.rect.center[0] - self.rect.center[0])
                 x, y = self.rect.center
-                self.image, self.rect = rotate(robot_image, x, y, self.delta)
+                if self.id % 3 == 1:
+                    self.image, self.rect = rotate(robot_image, x, y, self.delta)
+                elif self.id % 3 == 2:
+                    self.image, self.rect = rotate(robot_image_2, x, y, self.delta)
+                elif self.id % 3 == 0:
+                    self.image, self.rect = rotate(robot_image_2, x, y, self.delta)
                 dx = math.cos(self.delta) * v
                 dy = math.sin(self.delta) * v
                 self.x += dx
@@ -145,13 +150,6 @@ class Robot(pg.sprite.Sprite):
         for t in self.white_tiles:
             nodes[i] = t.id
             i += 1
-        """
-        print(nodes)
-        for n in self.front_tiles:
-            print(n.id)
-            for i in range(1, len(n.neighbour_ids) + 1):
-                print(" ", n.neighbour_ids[i - 1], "=>", n.neighbour_distances[i])
-        """
         for n in self.white_tiles:
             l = -1
             vertex = {}
