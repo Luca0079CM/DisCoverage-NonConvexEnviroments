@@ -170,15 +170,12 @@ def rotate(image, x, y, angle):
 if __name__ == '__main__':
     main()
 
+
 def main():
     x = []
     for i in range(0, 10):
         x.append(i)
 
-    while x:
-        if not x:
-            print("OK")
-        print(x.pop(0), len(x))
 
 
 if __name__ == '__main__':

@@ -21,6 +21,7 @@ class MapRect(pg.sprite.Sprite):
 def map_create(window):
     surface = pg.Surface([window.get_width(), window.get_height()])
     map = []
+    n_total_tiles = 0
     for i in range(0, window.get_width(), GRIDSIZE):
         for j in range(0, window.get_height(), GRIDSIZE):
             if ((i + j)/GRIDSIZE) % 2 == 0:
@@ -31,6 +32,7 @@ def map_create(window):
                 r.is_obstacle = True
             pg.draw.rect(surface, r.color, r.rect)
             map.append(r)
+            n_total_tiles += 1
 
     # Ostacolo 1
     i = GRIDSIZE * 20
@@ -47,6 +49,7 @@ def map_create(window):
                 m.is_obstacle = True
 
     # Neighbour
+    n_black_tiles = 0
     for m in map:
         i += 1
         if not m.is_obstacle:
@@ -62,7 +65,10 @@ def map_create(window):
             m.neighbour_ids.append((m.id[0] + 1, m.id[1]))
             m.neighbour_distances[4] = math.dist(m.rect.center,
                                                  search_by_id(map, (m.id[0] + 1, m.id[1])).rect.center)
-    return surface, map
+        else:
+            n_black_tiles += 1
+
+    return surface, map, n_total_tiles, n_black_tiles
 
 
 def search_by_id(map, id):

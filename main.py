@@ -2,7 +2,7 @@ import pygame as pg
 import math
 from random import *
 import Map
-import Robot as rbt
+import Robot
 import time
 
 # Colors
@@ -35,43 +35,49 @@ def main():
     icon = pg.image.load("robot1.png")
     pg.display.set_icon(icon)
     is_running = True
-    surface, map = Map.map_create(window)
-
+    surface, map, n_total_tiles, n_black_tiles = Map.map_create(window)
+    print(n_total_tiles)
+    print(n_black_tiles)
     # Robots
-    robot = rbt.Robot(110, window.get_height() - 110)
+    robots = [Robot.Robot(1, 1 * 110, window.get_height() - 110),
+              Robot.Robot(2, 300, window.get_height() - 310),
+              Robot.Robot(3, 600, window.get_height() - 190)]
 
     # Main Loop
     while is_running:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 is_running = False
-            elif event.type == pg.KEYDOWN:
-                seed()
-                rand = randint(0, len(standard_delta) - 1)
-                robot.delta = standard_delta[rand]
 
         for m in map:
-            if not m.found:
-                if pg.sprite.collide_circle(robot, m):
-                    if m.is_obstacle:
-                        m.color = BLACK
-                    elif m.neighbour_ids:
-                        m.color = WHITE
-                        robot.white_tiles.append(m)
-                    m.found = 1
-                pg.draw.rect(surface, m.color, m.rect)
-            if robot.rect.colliderect(m) and m.color == BLACK:
-                seed()
-                rand = randint(0, len(standard_delta) - 1)
-                robot.delta = standard_delta[rand]
-
-        robot.update(surface, map)
+            for robot in robots:
+                if not m.found:
+                    if pg.sprite.collide_circle(robot, m):
+                        if m.is_obstacle:
+                            m.color = BLACK
+                        elif m.neighbour_ids:
+                            m.color = WHITE
+                            robot.white_tiles.append(m)
+                        m.found = 1
+                    pg.draw.rect(surface, m.color, m.rect)
+                if robot.rect.colliderect(m) and m.color == BLACK:
+                    seed()
+                    rand = randint(0, len(standard_delta) - 1)
+                    robot.delta = standard_delta[rand]
+        i = 0
+        for robot in robots:
+            if not robot.empty_frontier:
+                robot.update(surface, map)
+            else:
+                i += 1
+        if i == len(robots):
+            is_running = False
         # Draw
         window.blit(surface, (0, 0))
-        window.blit(robot.image, robot.rect)
+        for robot in robots:
+            window.blit(robot.image, robot.rect)
         pg.display.update()
-
-        # time.sleep(10)
+    print("SUCCESS EXPLORATION")
 
 
 if __name__ == '__main__':
