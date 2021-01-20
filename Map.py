@@ -4,6 +4,7 @@ GRIDSIZE = 20
 # Colors
 GREY = (160, 160, 160)
 LIGHTGREY = (190, 190, 190)
+BLACK = (0, 0, 0)
 
 
 class MapRect(pg.sprite.Sprite):
@@ -30,6 +31,7 @@ def map_create(window):
                 r = MapRect(i, j, LIGHTGREY)
             if i == 0 or i == window.get_width() - GRIDSIZE or j == 0 or j == window.get_height() - GRIDSIZE:
                 r.is_obstacle = True
+                r.color = BLACK
             pg.draw.rect(surface, r.color, r.rect)
             map.append(r)
             n_total_tiles += 1

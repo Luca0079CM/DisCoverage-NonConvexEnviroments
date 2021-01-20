@@ -48,7 +48,6 @@ class Robot(pg.sprite.Sprite):
             if not self.empty_frontier:
                 pg.draw.rect(surface, BLUE, self.target.rect)
                 self.path = self.calculate_path(start)
-                print(self.path)
                 trg = self.path.pop(0)
                 for m in map:
                     if m.id[0] == trg[0] and m.id[1] == trg[1]:
