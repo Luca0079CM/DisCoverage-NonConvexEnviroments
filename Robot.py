@@ -11,6 +11,7 @@ BLUE = (0, 128, 255)
 
 robot_image = pg.image.load("robot1.png")
 robot_image_2 = pg.image.load("robot2.png")
+robot_image_3 = pg.image.load("robot3.png")
 # Speed
 v = 1
 # Delta
@@ -20,7 +21,7 @@ standard_delta = [0, pi / 4, pi / 2, pi * 3 / 4, pi, pi * 5 / 4, pi * 3 / 2, pi 
 
 
 class Robot(pg.sprite.Sprite):
-    def __init__(self, id, x, y):
+    def __init__(self, id, x, y, line_color):
         super().__init__()
         self.id = id
         self.image = robot_image
@@ -33,19 +34,26 @@ class Robot(pg.sprite.Sprite):
         self.frontier = []
         self.is_moving = False
         self.target = None
+        self.target_vector = []
         self.current_target = None
         self.path = []
         self.empty_frontier = False
+        self.line_color = line_color
+        self.first = True
+        self.disabled = False
 
     def update(self, surface, map):
-
         if not self.is_moving:
             start = self.calculate_start_and_frontier(surface, map)
+            if self.first:
+                self.target_vector.append(start.rect.center)
+                self.first = False
             self.target = self.calculate_target()
             if self.target is None:
                 self.empty_frontier = True
                 self.is_moving = False
             if not self.empty_frontier:
+                self.target_vector.append(self.target.rect.center)
                 pg.draw.rect(surface, BLUE, self.target.rect)
                 self.path = self.calculate_path(start)
                 trg = self.path.pop(0)
@@ -73,18 +81,12 @@ class Robot(pg.sprite.Sprite):
                 elif self.id % 3 == 2:
                     self.image, self.rect = rotate(robot_image_2, x, y, self.delta)
                 elif self.id % 3 == 0:
-                    self.image, self.rect = rotate(robot_image_2, x, y, self.delta)
+                    self.image, self.rect = rotate(robot_image_3, x, y, self.delta)
                 dx = math.cos(self.delta) * v
                 dy = math.sin(self.delta) * v
                 self.x += dx
                 self.y += dy
                 self.rect = self.image.get_rect(center=(self.x, self.y))
-                if self.id % 3 == 1:
-                    pg.draw.line(surface, BLACK, (x, y), self.rect.center, 2)
-                elif self.id % 3 == 2:
-                    pg.draw.line(surface, GREEN, (x, y), self.rect.center, 2)
-                elif self.id % 3 == 0:
-                    pg.draw.line(surface, RED, (x, y), self.rect.center, 2)
                 if self.rect.center[0] == self.current_target.rect.center[0] and \
                         self.rect.center[1] == self.current_target.rect.center[1] and \
                         self.current_target.id != self.target.id:
@@ -178,13 +180,13 @@ class Robot(pg.sprite.Sprite):
             path.append(nodes.get(int(v)))
         return path
 
+    def deactivate(self):
+        self.disabled = True
+
 
 def rotate(image, x, y, angle):
     angle = angle * converter
-    if angle == 0 or angle == 180:
-        angle -= 90
-    elif angle == 90 or angle == -90:
-        angle += 90
+    angle = -angle
     rotated_image = pg.transform.rotozoom(image, angle, 1)
     rotated_rect = rotated_image.get_rect(center=(x, y))
     return rotated_image, rotated_rect

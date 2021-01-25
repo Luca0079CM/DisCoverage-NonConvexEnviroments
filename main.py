@@ -1,6 +1,5 @@
 import pygame as pg
 import math
-from random import *
 import Map
 import Robot
 import time
@@ -27,24 +26,22 @@ COLUMNS = int(window.get_height() / GRIDSIZE)
 # Delta
 pi = math.pi
 converter = 180 / pi
-standard_delta = [0, pi / 4, pi / 2, pi * 3 / 4, pi, pi * 5 / 4, pi * 3 / 2, pi * 7 / 4]
 
 
 def main():
-    pg.display.set_caption("DisCoverage Exploration")
+    pg.display.set_caption("Non-Convex Exploration")
     icon = pg.image.load("robot1.png")
     pg.display.set_icon(icon)
     is_running = True
-    surface, map, n_total_tiles, n_black_tiles = Map.map_create(window)
-    print(n_total_tiles)
-    print(n_black_tiles)
+    surface, map, n_total_tiles = Map.map_create(window)
     # Robots
-    robots = [Robot.Robot(1, 1 * 110, window.get_height() - 110),
-              Robot.Robot(2, 300, window.get_height() - 310),
-              Robot.Robot(3, 600, window.get_height() - 190)
-              # Robot.Robot(3, window.get_width() - 40, window.get_height() - 150)
+    robots = [Robot.Robot(1, 1 * 110, window.get_height() - 110, BLACK),
+              Robot.Robot(2, 300, window.get_height() - 310, GREEN),
+              Robot.Robot(3, 600, window.get_height() - 190, RED)
+              # Robot.Robot(3, window.get_width() - 40, 130, RED)
               ]
     start = time.time()
+    l = 0
     # Main Loop
     while is_running:
         for event in pg.event.get():
@@ -62,28 +59,29 @@ def main():
                             robot.white_tiles.append(m)
                         m.found = 1
                     pg.draw.rect(surface, m.color, m.rect)
-                if robot.rect.colliderect(m) and m.color == BLACK:
-                    seed()
-                    rand = randint(0, len(standard_delta) - 1)
-                    robot.delta = standard_delta[rand]
-        i = 0
         for robot in robots:
             if not robot.empty_frontier:
                 robot.update(surface, map)
             else:
-                i += 1
-        if i == len(robots):
-            is_running = False
+                if not robot.disabled:
+                    l += 1
+                    for i in range(1, len(robot.target_vector)):
+                        pg.draw.line(surface, robot.line_color, robot.target_vector[i], robot.target_vector[i - 1], 2)
+                    print(l)
+                    robot.deactivate()
+
+        if l == len(robots):
+            stop = time.time()
+            t = stop - start
+            print("SUCCESS EXPLORATION")
+            print("\nNumero di Robot:", len(robots))
+            print("Tempo impiegato:", math.trunc(t / 60), " minuti", round(t - math.trunc(t / 60) * 60), " secondi")
+            l = 0 
         # Draw
         window.blit(surface, (0, 0))
         for robot in robots:
             window.blit(robot.image, robot.rect)
         pg.display.update()
-    stop = time.time()
-    t = stop - start
-    print("SUCCESS EXPLORATION")
-    print("\nNumero di Robot:", len(robots))
-    print("Tempo impiegato:", math.trunc(t/60), " minuti", round(t - math.trunc(t/60) * 60), " secondi")
 
 
 if __name__ == '__main__':

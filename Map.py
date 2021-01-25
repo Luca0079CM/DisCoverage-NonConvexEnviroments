@@ -51,26 +51,37 @@ def map_create(window):
                 m.is_obstacle = True
 
     # Neighbour
-    n_black_tiles = 0
     for m in map:
         i += 1
         if not m.is_obstacle:
-            m.neighbour_ids.append((m.id[0] - 1, m.id[1]))
+            m.neighbour_ids.append((m.id[0] - 1, m.id[1] - 1))
             m.neighbour_distances[1] = math.dist(m.rect.center,
-                                                 search_by_id(map, (m.id[0] - 1, m.id[1])).rect.center)
-            m.neighbour_ids.append((m.id[0], m.id[1] - 1))
+                                                 search_by_id(map, (m.id[0] - 1, m.id[1] - 1)).rect.center)
+            m.neighbour_ids.append((m.id[0] - 1, m.id[1]))
             m.neighbour_distances[2] = math.dist(m.rect.center,
+                                                 search_by_id(map, (m.id[0] - 1, m.id[1])).rect.center)
+            m.neighbour_ids.append((m.id[0] - 1, m.id[1] + 1))
+            m.neighbour_distances[3] = math.dist(m.rect.center,
+                                                 search_by_id(map, (m.id[0] - 1, m.id[1] + 1)).rect.center)
+
+            m.neighbour_ids.append((m.id[0], m.id[1] - 1))
+            m.neighbour_distances[4] = math.dist(m.rect.center,
                                                  search_by_id(map, (m.id[0], m.id[1] - 1)).rect.center)
             m.neighbour_ids.append((m.id[0], m.id[1] + 1))
-            m.neighbour_distances[3] = math.dist(m.rect.center,
+            m.neighbour_distances[5] = math.dist(m.rect.center,
                                                  search_by_id(map, (m.id[0], m.id[1] + 1)).rect.center)
-            m.neighbour_ids.append((m.id[0] + 1, m.id[1]))
-            m.neighbour_distances[4] = math.dist(m.rect.center,
-                                                 search_by_id(map, (m.id[0] + 1, m.id[1])).rect.center)
-        else:
-            n_black_tiles += 1
 
-    return surface, map, n_total_tiles, n_black_tiles
+            m.neighbour_ids.append((m.id[0] + 1, m.id[1] - 1))
+            m.neighbour_distances[6] = math.dist(m.rect.center,
+                                                 search_by_id(map, (m.id[0] + 1, m.id[1] - 1)).rect.center)
+            m.neighbour_ids.append((m.id[0] + 1, m.id[1]))
+            m.neighbour_distances[7] = math.dist(m.rect.center,
+                                                 search_by_id(map, (m.id[0] + 1, m.id[1])).rect.center)
+            m.neighbour_ids.append((m.id[0] + 1, m.id[1] + 1))
+            m.neighbour_distances[8] = math.dist(m.rect.center,
+                                                 search_by_id(map, (m.id[0] + 1, m.id[1] + 1)).rect.center)
+
+    return surface, map, n_total_tiles
 
 
 def search_by_id(map, id):
