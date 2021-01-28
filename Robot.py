@@ -17,6 +17,7 @@ v = 1
 # Delta
 pi = math.pi
 converter = 180 / pi
+tollerance = 0.1
 standard_delta = [0, pi / 4, pi / 2, pi * 3 / 4, pi, pi * 5 / 4, pi * 3 / 2, pi * 7 / 4]
 
 
@@ -64,7 +65,7 @@ class Robot(pg.sprite.Sprite):
                 self.is_moving = True
 
         if not self.empty_frontier:
-            if self.rect.center == self.target.rect.center:
+            if math.dist(self.rect.center, self.target.rect.center) < tollerance:
                 self.is_moving = False
                 self.current_target = None
                 for f in self.frontier:
@@ -87,8 +88,7 @@ class Robot(pg.sprite.Sprite):
                 self.x += dx
                 self.y += dy
                 self.rect = self.image.get_rect(center=(self.x, self.y))
-                if self.rect.center[0] == self.current_target.rect.center[0] and \
-                        self.rect.center[1] == self.current_target.rect.center[1] and \
+                if math.dist(self.rect.center, self.current_target.rect.center) < tollerance and \
                         self.current_target.id != self.target.id:
                     trg = self.path.pop(0)
                     for m in map:
@@ -100,7 +100,7 @@ class Robot(pg.sprite.Sprite):
         start = None
         min_dist = 10000
 
-        for m in map:
+        for m in self.white_tiles:
             if self.rect.colliderect(m.rect):
                 if math.dist(self.rect.center, m.rect.center) < min_dist:
                     start = m
